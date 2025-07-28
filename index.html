@@ -90,6 +90,16 @@
       margin-top: 20px;
       border-radius: 10px;
     }
+
+    .error {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #ffe6e6;
+      color: #b00020;
+      border: 1px solid #f5c6cb;
+      border-radius: 8px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -124,8 +134,8 @@
 
   <button onclick="calcular()">Calcular tarifa</button>
 
+  <div id="error" class="error" style="display: none;"></div>
   <div class="result" id="resultado"></div>
-
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -139,21 +149,31 @@
       const lluvia = document.getElementById('lluvia').checked;
       const noche = document.getElementById('noche').checked;
 
+      const errorDiv = document.getElementById('error');
+      errorDiv.style.display = 'none';
+      errorDiv.innerHTML = '';
+
       if (!origen || !destino) {
-        alert("Por favor ingresa tanto origen como destino.");
+        errorDiv.innerHTML = '⚠️ Por favor ingresa tanto origen como destino.';
+        errorDiv.style.display = 'block';
         return;
       }
 
       try {
-        const res = await fetch('https://enruta-backend.onrender.com/calcular-distancia', {
+        const response = await fetch('https://enruta-backend.onrender.com/calcular-distancia', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ origen, destino })
         });
 
-        const data = await res.json();
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'No se pudo calcular la tarifa.');
+        }
+
         const km = data.distancia;
-        const coords = data.coordenadas; // Backend debe devolver también coordenadas
+        const coords = data.coordenadas;
 
         let tarifa = 1500 + Math.max(0, km - 1) * 500;
         if (festivo) tarifa += 500;
@@ -168,26 +188,30 @@
           <p><strong>Pago al domiciliario:</strong> $${pago.toLocaleString('es-CO')}</p>
         `;
 
-        // Mostrar mapa
         if (!map) {
-          map = L.map('map').setView([4.813, -75.696], 13); // Centro Pereira
+          map = L.map('map').setView([4.813, -75.696], 13);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
           }).addTo(map);
         }
 
-        // Limpiar rutas anteriores
         if (routeLayer) {
           map.removeLayer(routeLayer);
         }
 
-        // Ruta entre coordenadas
-        routeLayer = L.polyline(coords, { color: '#F9B000', weight: 5 }).addTo(map);
-        map.fitBounds(routeLayer.getBounds());
+        if (coords && coords.length >= 2) {
+          routeLayer = L.polyline(coords, { color: '#F9B000', weight: 5 }).addTo(map);
+          map.fitBounds(routeLayer.getBounds());
+        }
 
       } catch (error) {
-        console.error(error);
-        alert("Error calculando distancia o cargando el mapa.");
+        console.error('❌ Error:', error.message);
+        document.getElementById('resultado').innerHTML = '';
+        errorDiv.innerHTML = `❌ ${error.message}`;
+        errorDiv.style.display = 'block';
+        if (routeLayer && map) {
+          map.removeLayer(routeLayer);
+        }
       }
     }
   </script>
