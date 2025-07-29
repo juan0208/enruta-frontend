@@ -25,10 +25,8 @@
     }
 
     .slogan {
-      font-family: 'Poppins', sans-serif;
-      font-size: 0.95rem;
       font-style: italic;
-      color: #333333;
+      color: #333;
       margin-bottom: 20px;
     }
 
@@ -62,7 +60,7 @@
     }
 
     button {
-      margin-top: 20px;
+      margin-top: 15px;
       background: #F9B000;
       color: #fff;
       padding: 12px;
@@ -77,6 +75,11 @@
 
     button:hover {
       background-color: #E53935;
+    }
+
+    #ubicacionBtn {
+      background: #333;
+      margin-top: 10px;
     }
 
     #whatsappBtn {
@@ -110,6 +113,7 @@
   </style>
 </head>
 <body>
+
   <div class="logo">
     <img src="logo.png" alt="Logo Enruta" />
   </div>
@@ -120,20 +124,13 @@
   <label>Origen:
     <input list="barrios" id="origen" placeholder="Ej: Cuba, Pereira" />
   </label>
+  <button id="ubicacionBtn" onclick="detectarUbicacion()">📍 Usar mi ubicación actual</button>
 
   <label>Destino:
     <input list="barrios" id="destino" placeholder="Ej: Parque Arboleda, Pereira" />
   </label>
 
-  <datalist id="barrios">
-    <option value="Cuba, Pereira">
-    <option value="Parque Arboleda, Pereira">
-    <option value="Villa Verde, Pereira">
-    <option value="Los Álamos, Pereira">
-    <option value="Boston, Pereira">
-    <option value="San Joaquín, Pereira">
-    <option value="El Jardín, Pereira">
-  </datalist>
+  <datalist id="barrios"></datalist>
 
   <label><input type="checkbox" id="festivo"> ¿Es festivo?</label>
   <label><input type="checkbox" id="lluvia"> ¿Está lloviendo?</label>
@@ -148,7 +145,40 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const barrios = [
+      "Cuba, Pereira", "Parque Arboleda, Pereira", "Villa Verde, Pereira",
+      "Los Álamos, Pereira", "Boston, Pereira", "San Joaquín, Pereira", "El Jardín, Pereira"
+    ];
+
     let map, routeLayer;
+
+    function autocompletar(id) {
+      const input = document.getElementById(id);
+      input.addEventListener('input', () => {
+        const valor = input.value.toLowerCase();
+        const datalist = document.getElementById('barrios');
+        datalist.innerHTML = '';
+        barrios.filter(b => b.toLowerCase().includes(valor)).forEach(b => {
+          const option = document.createElement('option');
+          option.value = b;
+          datalist.appendChild(option);
+        });
+      });
+    }
+
+    autocompletar('origen');
+    autocompletar('destino');
+
+    function detectarUbicacion() {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+        const data = await res.json();
+        document.getElementById('origen').value = data.display_name || '';
+      }, () => {
+        alert("No se pudo obtener tu ubicación.");
+      });
+    }
 
     async function calcular() {
       const origen = document.getElementById('origen').value.trim();
@@ -176,40 +206,36 @@
         });
 
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'No se pudo calcular la tarifa.');
-        }
+        if (!response.ok) throw new Error(data.error || 'Error calculando.');
 
         const km = data.distancia;
         const coords = data.coordenadas;
 
-        let tarifa = 4000 + Math.max(0, km - 1) * 700;
+        let tarifa = 3500 + Math.max(0, km - 1) * 500;
         if (festivo) tarifa += 500;
         if (lluvia) tarifa += 500;
         if (noche) tarifa += 500;
 
         tarifa = Math.floor(tarifa / 100) * 100;
-        let pago = Math.floor((tarifa * 0.6) / 100) * 100;
+        const pago = Math.floor((tarifa * 0.7) / 100) * 100;
 
         document.getElementById('resultado').innerHTML = `
-        <p><strong>Distancia:</strong> ${km.toFixed(2)} km</p>
-        <p><strong>Tarifa total:</strong> $${tarifa.toLocaleString('es-CO')}</p>
-        <p><strong>Pago al domiciliario:</strong> $${pago.toLocaleString('es-CO')}</p>
+          <p><strong>Distancia:</strong> ${km.toFixed(2)} km</p>
+          <p><strong>Tarifa total:</strong> $${tarifa.toLocaleString('es-CO')}</p>
+          <p><strong>Pago al domiciliario:</strong> $${pago.toLocaleString('es-CO')}</p>
         `;
 
         document.getElementById('whatsappBtn').style.display = 'block';
         document.getElementById('whatsappBtn').onclick = function () {
-  const mensaje = `🚴‍♂️ *Enruta, necesito un domicilio* 🚴‍♂️
+          const mensaje = `🚴‍♂️ *Enruta, necesito un domicilio* 🚴‍♂️
 
 📍 *Origen:* ${origen}
 🏁 *Destino:* ${destino}
 💰 *Valor del domicilio:* $${tarifa.toLocaleString('es-CO')} COP
 
 ¡Gracias! 🙌`;
-  const url = `https://wa.me/573148522784?text=${encodeURIComponent(mensaje)}`;
-  window.open(url, '_blank');
-};
+          window.open(`https://wa.me/573148522784?text=${encodeURIComponent(mensaje)}`, '_blank');
+        };
 
         if (!map) {
           map = L.map('map').setView([4.813, -75.696], 13);
@@ -218,9 +244,7 @@
           }).addTo(map);
         }
 
-        if (routeLayer) {
-          map.removeLayer(routeLayer);
-        }
+        if (routeLayer) map.removeLayer(routeLayer);
 
         if (coords && coords.length >= 2) {
           routeLayer = L.polyline(coords, { color: '#F9B000', weight: 5 }).addTo(map);
@@ -229,12 +253,10 @@
 
       } catch (error) {
         console.error('❌ Error:', error.message);
-        document.getElementById('resultado').innerHTML = '';
         errorDiv.innerHTML = `❌ ${error.message}`;
         errorDiv.style.display = 'block';
-        if (routeLayer && map) {
-          map.removeLayer(routeLayer);
-        }
+        document.getElementById('resultado').innerHTML = '';
+        if (routeLayer && map) map.removeLayer(routeLayer);
       }
     }
   </script>
