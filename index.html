@@ -6,7 +6,7 @@
   <title>Enruta</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Poppins&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/png" href="logo.png" />
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -189,12 +189,13 @@
         if (lluvia) tarifa += 500;
         if (noche) tarifa += 500;
 
-        const pago = Math.round(tarifa * 0.7);
+        tarifa = Math.floor(tarifa / 100) * 100;
+        let pago = Math.floor((tarifa * 0.7) / 100) * 100;
 
         document.getElementById('resultado').innerHTML = `
-          <p><strong>Distancia:</strong> ${km.toFixed(2)} km</p>
-          <p><strong>Tarifa total:</strong> $${tarifa.toLocaleString('es-CO')}</p>
-          <p><strong>Pago al domiciliario:</strong> $${pago.toLocaleString('es-CO')}</p>
+        <p><strong>Distancia:</strong> ${km.toFixed(2)} km</p>
+        <p><strong>Tarifa total:</strong> $${tarifa.toLocaleString('es-CO')}</p>
+        <p><strong>Pago al domiciliario:</strong> $${pago.toLocaleString('es-CO')}</p>
         `;
 
         document.getElementById('whatsappBtn').style.display = 'block';
