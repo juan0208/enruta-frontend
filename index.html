@@ -6,6 +6,7 @@
   <title>Enruta</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Poppins&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" type="image/png" href="favicon.png" />
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -183,12 +184,12 @@
         const km = data.distancia;
         const coords = data.coordenadas;
 
-        let tarifa = 1500 + Math.max(0, km - 1) * 500;
+        let tarifa = 3500 + Math.max(0, km - 1) * 500;
         if (festivo) tarifa += 500;
         if (lluvia) tarifa += 500;
         if (noche) tarifa += 500;
 
-        const pago = Math.round(tarifa * 0.3);
+        const pago = Math.round(tarifa * 0.7);
 
         document.getElementById('resultado').innerHTML = `
           <p><strong>Distancia:</strong> ${km.toFixed(2)} km</p>
