@@ -198,10 +198,16 @@
 
         document.getElementById('whatsappBtn').style.display = 'block';
         document.getElementById('whatsappBtn').onclick = function () {
-          const mensaje = `Enruta, necesito un domicilio:\nOrigen: ${origen}\nDestino: ${destino}\nValor: $${tarifa.toLocaleString('es-CO')} COP`;
-          const url = `https://wa.me/573148522784?text=${encodeURIComponent(mensaje)}`;
-          window.open(url, '_blank');
-        };
+  const mensaje = `🚴‍♂️ *Enruta, necesito un domicilio* 🚴‍♂️
+
+📍 *Origen:* ${origen}
+🏁 *Destino:* ${destino}
+💰 *Valor del domicilio:* $${tarifa.toLocaleString('es-CO')} COP
+
+¡Gracias! 🙌`;
+  const url = `https://wa.me/573148522784?text=${encodeURIComponent(mensaje)}`;
+  window.open(url, '_blank');
+};
 
         if (!map) {
           map = L.map('map').setView([4.813, -75.696], 13);
